@@ -1,0 +1,103 @@
+<tw-storydata name="proj3" startnode="1" creator="Twine" creator-version="2.0.10" ifid="D47D219F-468D-4B93-B10A-484E8F5660BD" format="Harlowe" options="" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">
+</style><script role="script" id="twine-user-script" type="text/twine-javascript">
+</script><tw-passagedata pid="1" name="your bedroom" tags="" position="105,291">You&#39;re a college student. You&#39;re in your room. You can interact with objects.
+
+* [[look at my computer]]
+* [[read my diary]]
+
+(display: &quot;initialize variables&quot;)</tw-passagedata>
+<tw-passagedata pid="2" name="look at my computer" tags="" position="255,403">You read some buzzfeed articles. This is a prototype, so there&#39;s not a lot of flavor text.
+
+[[wait]].
+</tw-passagedata>
+<tw-passagedata pid="3" name="wait" tags="" position="406,307">Your boyfriend comes in. He&#39;s not a very nice guy. In fact, he&#39;s pretty abusive. He strangles you. You die. When this is drawn out with sprites, it will be much more emotional.
+
+Your spirit floats up and you can see your body in front of you. You&#39;re now a ghost!
+
+You see your boyfriend rearranging your body. He takes out a rope and ties it around your neck, then hangs your body from a pipe in the ceiling. &quot;The perfect suicide&quot;, you hear him say. He then leaves the room.
+
+While you&#39;re a ghost (spoiler alert: the whole rest of the game), you can hear living people talk. They can&#39;t see you, so this means you can eavesdrop on conversations. Being a ghost, you can also walk through walls.
+
+In a non-twine version, the game will be 2D, and the camera will be looking down on the floor plan of your dorm. You can move between rooms and go through walls with the WASD keys or by clicking. In this version, though, you can only do a couple things.
+
+(display: &quot;bedroom&quot;)</tw-passagedata>
+<tw-passagedata pid="4" name="interact with the computer" tags="" position="715,92">(display: &quot;hud&quot;)
+Because you&#39;re a ghost, you can&#39;t do a lot of things with the computer.
+
+[[knock over the computer]] Costs 1 spiritual point.
+[[Do something else|bedroom]].
+</tw-passagedata>
+<tw-passagedata pid="5" name="read my diary" tags="" position="255,199">Your diary has all the details of how terrible your boyfriend is. Why are you even with him, anyway? (because abusive people make it hard to leave a relationship with them)
+
+[[wait]].</tw-passagedata>
+<tw-passagedata pid="6" name="knock over the computer" tags="" position="849,94">(display: &quot;hud&quot;)
+Your computer clatters to the ground. Your boyfriend notices. He looks at it and says &quot;Hm, that&#39;s strange.&quot;
+
+(display: &quot;bedroom&quot;)
+
+(set: $sp to it - 1)</tw-passagedata>
+<tw-passagedata pid="7" name="bedroom" tags="" position="537,306">(display: &quot;hud&quot;)
+[[interact with the computer]]
+[[interact with your diary]]
+[[interact with your body]]
+[[Walk through the walls|go somewhere]]</tw-passagedata>
+<tw-passagedata pid="8" name="interact with your diary" tags="" position="693,380">(display: &quot;hud&quot;)
+You can, in general, interact with inanimate objects. You can do things like knock them over, lift them, and so on. You know, the kind of stuff you see on paranormal television shows.
+
+[[Do something else|bedroom]]</tw-passagedata>
+<tw-passagedata pid="9" name="interact with your body" tags="" position="705,245">(display: &quot;hud&quot;)
+It&#39;s weird to see your body lifted into a noose.
+
+[[poke your body]]. Costs 1 spiritual point.
+[[Do something else|bedroom]]</tw-passagedata>
+<tw-passagedata pid="10" name="poke your body" tags="" position="839,247">(display: &quot;hud&quot;)
+You poke your body. It swings back and forth from its noose.
+
+(set: $sp to it - 1)</tw-passagedata>
+<tw-passagedata pid="11" name="go somewhere" tags="" position="536,600">(display: &quot;hud&quot;)
+Where will you go?
+[[Your bedroom|bedroom]]
+[[Your boyfriend&#39;s bedroom|boyfriend&#39;s room]]
+[[best friend&#39;s room]]
+There will be several other locations.</tw-passagedata>
+<tw-passagedata pid="12" name="boyfriend&#39;s room" tags="" position="995,306">In your boyfriend&#39;s room, you can only interact with the window. (In a non-prototype version, there will be more things)
+
+[[boyfriend&#39;s window]]
+[[go somewhere else|go somewhere]]</tw-passagedata>
+<tw-passagedata pid="13" name="hud" tags="" position="241,71">You have $sp spiritual points.
+(if: $time &gt; 6 and time &lt; 12+6)[It is now daytime.]
+(else:)[It is now night.]
+
+(set: $time to it + 1)
+(if: $time &gt;= 24)[(set: $time to 0)]</tw-passagedata>
+<tw-passagedata pid="14" name="boyfriend&#39;s window" tags="" position="1139,304">You see a large tree just outside your boyfriend&#39;s window. Squished between two of the branches, you see your diary!
+
+(set: $knows_diary_location to true)</tw-passagedata>
+<tw-passagedata pid="15" name="initialize variables" tags="" position="102,124">(set: $time to 4)
+(set: $sp to 10)
+
+(set: $knows_diary_location to false)
+
+(set: $friend_belief to 0)</tw-passagedata>
+<tw-passagedata pid="16" name="best friend&#39;s room" tags="" position="1001,495">You see your best friend in her room.
+
+[[knock a book off her shelf]] Costs 1 spirituality point.
+[[appear to her]] Costs 4 spirituality points.</tw-passagedata>
+<tw-passagedata pid="17" name="knock a book off her shelf" tags="" position="1001,645">A book flies off her shelf. &quot;Oh, that&#39;s weird. Maybe there is something strange going on...&quot;
+
+Lost 1 spiritual point. (set: $sp to it - 1)
+Her belief in the occult increases. (set $friend_belief to it + 1)</tw-passagedata>
+<tw-passagedata pid="18" name="appear to her" tags="" position="1151,513">(if: $friend_belief &lt; 1)[
+She screams. &quot;Oh god! Ghosts aren&#39;t real!&quot;
+You try to talk to her, but she doesn&#39;t listen.
+Her belief in the occult increases. (set: $friend_belief to it + 1)
+[[continue|best friend&#39;s room]]
+]
+(else:)[She gasps. &quot;I knew ghosts were real! What do you want to tell me?&quot;
+[[Tell her your boyfriend killed you.|tell killer]]
+(if: $knows_diary_location)[[[Tell her where your diary is.|tell diary]]]
+Her belief in the occult increases. (set: $friend_belief to it + 1)]
+</tw-passagedata>
+<tw-passagedata pid="19" name="tell diary" tags="" position="1281,634">&quot;Great! Now I know how to get him convincted&quot;</tw-passagedata>
+<tw-passagedata pid="20" name="tell killer" tags="" position="1286,420">You tell her you were murdered by your boyfriend. &quot;I knew it!&quot;, she says. &quot;Now if only we had some evidence...&quot;</tw-passagedata>
+</tw-storydata>
