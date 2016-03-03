@@ -1,0 +1,129 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Project 3</title>
+    <script type="text/javascript" src="js/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+//Game screen dimension variables
+const SCREEN_WIDTH = 800;
+const SCREEN_HEIGHT = 600
+
+var game = new Phaser.Game(SCREEN_WIDTH, SCREEN_HEIGHT, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+//Dimensions for spritesheet's individual sprite
+const SPRITE_WIDTH = 128/4;
+const SPRITE_HEIGHT = 192/4;
+
+const MOVEMENT_SPEED = 100;
+const FRAME_RATE = 5;
+
+
+var playerSprite;
+var cursors;
+//Preloads graphics onto the game
+function preload() {
+	game.load.spritesheet("Protagonist_Not_Ghost", "Assets/Sprite Sheets/Protagonist.png",SPRITE_WIDTH,SPRITE_HEIGHT);
+}
+
+//Initial function run after preload
+function create() {
+	initializesSprites();
+
+	// Initializes controls
+    cursors = game.input.keyboard.createCursorKeys();
+}
+
+//Initializes all the characters
+function initializesSprites(){
+	playerSprite = createSprite(playerSprite,SCREEN_WIDTH/2,SCREEN_HEIGHT/2,"Protagonist_Not_Ghost");
+}
+
+/**
+Initializes a sprite
+@param: sprite
+		a var to store the sprite 
+@param: x_position
+		an integer refering to starting x_position
+@param: y_position
+		an integer refering to starting y_position
+@param: name
+		a string refering to the sprite sheet in the format of
+		[downFrame1 downFrame2 downFrame3 downFrame4]
+		[leftFrame1 leftFrame2 leftFrame3 leftFrame4]
+		[rightFrame1 rightFrame2 rightFrame3 rightFrame4]
+		[upFrame1 upFrame2 upFrame3 upFrame4]
+@return: the initialized sprite
+*/
+function createSprite(sprite,x_position,y_position,name) {
+	//Initializes sprite and adds it to game
+	sprite = game.add.sprite(x_position,y_position,name,0);
+
+	//Enables physics
+	game.physics.enable(sprite);
+	sprite.body.collideWorldBounds = true;
+
+	sprite.animations.add("down",[0,1,2,3],FRAME_RATE,true);
+	sprite.animations.add("left",[4,5,6,7],FRAME_RATE,true);
+	sprite.animations.add("right",[8,9,10,11],FRAME_RATE,true);
+	sprite.animations.add("up",[12,13,14,15],FRAME_RATE,true);
+	return sprite;
+}
+    
+//Update function
+function update() {
+    controls();
+    collisionUpdate();
+    cameraUpdate();
+}
+
+//Updates collision
+function collisionUpdate() {
+
+}
+
+//Updates the camera position
+function cameraUpdate() {  
+
+}
+
+//Manages controls for the game
+function controls() {
+	movementControls();
+}
+
+//Manages movement controls
+function movementControls(){
+	//Resets movement
+	playerSprite.body.velocity.x = 0;
+	playerSprite.body.velocity.y = 0;
+
+	if (cursors.right.isDown) {
+		playerSprite.body.velocity.x = MOVEMENT_SPEED;
+		playerSprite.animations.play("right");
+	} else if (cursors.up.isDown) {
+		playerSprite.body.velocity.y = -MOVEMENT_SPEED;
+		playerSprite.animations.play("up");
+	} else if (cursors.down.isDown) {
+		playerSprite.body.velocity.y = MOVEMENT_SPEED;
+		playerSprite.animations.play("down");
+	} else if (cursors.left.isDown) {
+		playerSprite.body.velocity.x = -MOVEMENT_SPEED;
+		playerSprite.animations.play("left");
+	} else {
+		playerSprite.animations.stop(null,true);
+	}
+}
+</script>
+
+</body>
+</html>
