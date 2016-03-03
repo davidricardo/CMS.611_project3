@@ -23,29 +23,52 @@ var game = new Phaser.Game(SCREEN_WIDTH, SCREEN_HEIGHT, Phaser.AUTO, '', { prelo
 //Dimensions for spritesheet's individual sprite
 const SPRITE_WIDTH = 128/4;
 const SPRITE_HEIGHT = 192/4;
-
+//Movement speed and frame rate
 const MOVEMENT_SPEED = 100;
 const FRAME_RATE = 5;
-
-
+//Event variables
+var prologueEnded = false;
+//Sprite variables
 var playerSprite;
+var ghostOfYou;
+
+//Control variables
 var cursors;
+var spacebar;
+var enableButtonInput = true;
+const INPUT_DELAY = Phaser.Timer.SECOND*1/2;
+
 //Preloads graphics onto the game
 function preload() {
 	game.load.spritesheet("Protagonist_Not_Ghost", "Assets/Sprite Sheets/Protagonist.png",SPRITE_WIDTH,SPRITE_HEIGHT);
+	game.load.spritesheet("Protagonist_Ghost","Assets/Sprite Sheets/ProtagonistGhost.png",SPRITE_WIDTH,SPRITE_HEIGHT);
+	game.load.image("Background","Assets/Backgrounds/Sample.jpg");
 }
 
 //Initial function run after preload
 function create() {
 	initializesSprites();
 
-	// Initializes controls
-    cursors = game.input.keyboard.createCursorKeys();
+	initializeControls();
+    
 }
 
 //Initializes all the characters
 function initializesSprites(){
+	game.add.sprite(0,0,"Background");
+
 	playerSprite = createSprite(playerSprite,SCREEN_WIDTH/2,SCREEN_HEIGHT/2,"Protagonist_Not_Ghost");
+	playerSprite.body.immovable = true;
+	ghostOfYou = createSprite(ghostOfYou,SCREEN_WIDTH/3,SCREEN_HEIGHT/2,"Protagonist_Ghost");
+	ghostOfYou.body.moves = false;
+}
+
+//Initializes controls
+function initializeControls(){
+	cursors = game.input.keyboard.createCursorKeys();
+	spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+	
+	game.input.enabled = true;
 }
 
 /**
@@ -88,7 +111,7 @@ function update() {
 
 //Updates collision
 function collisionUpdate() {
-
+	game.physics.arcade.collide(ghostOfYou,playerSprite,goGhost);
 }
 
 //Updates the camera position
@@ -99,6 +122,32 @@ function cameraUpdate() {
 //Manages controls for the game
 function controls() {
 	movementControls();
+}
+
+//Test for spacebar events
+function goGhost(){
+	if (spacebar.isDown && enableButtonInput){
+		if (prologueEnded==false){
+			playerSprite.loadTexture("Protagonist_Ghost",FRAME_RATE,true);
+			prologueEnded = true;	
+		} else {
+			playerSprite.loadTexture("Protagonist_Not_Ghost",FRAME_RATE,true);
+			prologueEnded = false;
+		}
+		disableInput();
+	}
+	
+}
+
+//Reenables button input
+function reenableInput(){
+	enableButtonInput = true;
+}
+
+//Disables button input
+function disableInput(){
+	enableButtonInput=false;
+	game.time.events.add(INPUT_DELAY,reenableInput,this);
 }
 
 //Manages movement controls
