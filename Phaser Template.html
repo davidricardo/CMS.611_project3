@@ -31,12 +31,17 @@ var prologueEnded = false;
 //Sprite variables
 var playerSprite;
 var ghostOfYou;
+var diary;
 
 //Control variables
 var cursors;
 var spacebar;
+var enterbar;
 var enableButtonInput = true;
 const INPUT_DELAY = Phaser.Timer.SECOND*1/2;
+
+// Story variables
+var text;
 
 //Preloads graphics onto the game
 function preload() {
@@ -48,9 +53,34 @@ function preload() {
 //Initial function run after preload
 function create() {
 	initializesSprites();
-
 	initializeControls();
-    
+
+    // http://www.html5gamedevs.com/topic/6476-collision-with-gameaddgraphics-and-a-sprite/
+    // http://jsfiddle.net/lewster32/4yh8ee1f/
+    var diarybmd = game.add.bitmapData(32, 32);
+    diarybmd.ctx.rect(0, 0, 32, 32);
+    diarybmd.ctx.fillStyle = "black";
+    diarybmd.ctx.fill();
+
+    diary = game.add.sprite(game.world.centerX+100, game.world.centerY, diarybmd);
+    game.physics.arcade.enable(diary);
+    diary.anchor.set(0.5);
+    diary.body.immovable = true;
+    diary.body.collideWorldBounds = true;
+
+    var style = {
+        font: "32px Arial",
+        fill: "#ff0044",
+//        wordWrap: true,
+//        wordWrapWidth: sprite.width,
+        align: "center",
+        backgroundColor: "#ffff00"
+    };
+
+    text = game.add.text(0, 0, "You found a diary", style);
+    text.anchor.set(0.5);
+    text.visible = false;
+
 }
 
 //Initializes all the characters
@@ -67,7 +97,7 @@ function initializesSprites(){
 function initializeControls(){
 	cursors = game.input.keyboard.createCursorKeys();
 	spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-	
+	enterbar = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
 	game.input.enabled = true;
 }
 
@@ -112,6 +142,14 @@ function update() {
 //Updates collision
 function collisionUpdate() {
 	game.physics.arcade.collide(ghostOfYou,playerSprite,goGhost);
+    if(game.physics.arcade.overlap(diary, playerSprite)){
+        text.x = game.world.centerX;
+        text.y = 50;
+        text.visible = true;
+    }
+    else{
+        text.visible = false;
+    }
 }
 
 //Updates the camera position
@@ -122,7 +160,13 @@ function cameraUpdate() {
 //Manages controls for the game
 function controls() {
 	movementControls();
+    enterbar.onDown.add(function () {
+        if(game.physics.arcade.overlap(diary, playerSprite)){
+            text.setText("You are now reading the diary!");
+        }
+    }, this);
 }
+
 
 //Test for spacebar events
 function goGhost(){
