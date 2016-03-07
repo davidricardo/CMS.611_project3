@@ -3,15 +3,21 @@
 <head> 
     <meta charset="UTF-8" />
     <title>Project 3</title>
-    <script type="text/javascript" src="js/phaser.min.js"></script>
     <style type="text/css">
         body {
             margin: 0;
+			background-color: black;
         }
+		canvas {
+			display : block;
+			margin : auto;
+			position: relative;
+			transform: translateY(10%);
+		}
     </style>
 </head>
 <body>
-
+<script type="text/javascript" src="js/phaser.min.js"></script>
 <script type="text/javascript">
 
 //Game screen dimension variables
@@ -32,6 +38,9 @@ var prologueEnded = false;
 var playerSprite;
 
 var ghostOfYou;
+var currentFriendSprite;
+var killerSprite;
+var detectiveSprite;
 var diary;
 
 //Control variables
@@ -50,17 +59,23 @@ var layer;
 
 //Preloads graphics onto the game
 function preload() {
-	game.load.spritesheet("Protagonist_Not_Ghost", "Assets/Images/Sprite Sheets/Protagonist.png",SPRITE_WIDTH,SPRITE_HEIGHT);
-	game.load.spritesheet("Protagonist_Ghost","Assets/Images/Sprite Sheets/ProtagonistGhost.png",SPRITE_WIDTH,SPRITE_HEIGHT);
-	game.load.spritesheet("Detective","Assets/Images/Sprite Sheets/Detective.png",SPRITE_WIDTH,SPRITE_HEIGHT);
-	game.load.image("Background","Assets/Images/Backgrounds/Sample.jpg");
+	// name of the
+	var spriteGraphics = [
+		{name: "Protagonist_Not_Ghost", url: "Assets/Images/Sprite Sheets/Protagonist.png"},
+		{name: "Protagonist_Ghost", url: "Assets/Images/Sprite Sheets/ProtagonistGhost.png"},
+		{name: "Current_Friend", url: "Assets/Images/Sprite Sheets/CurrentFriend.png"},
+		{name: "Detective", url: "Assets/Images/Sprite Sheets/Detective.png"},
+		{name: "Killer", url: "Assets/Images/Sprite Sheets/Killer.png"}
+	]
 
+	for(var i=0; i<spriteGraphics.length; i++){
+		game.load.spritesheet(spriteGraphics[i].name,spriteGraphics[i].url,SPRITE_WIDTH,SPRITE_HEIGHT);
+	}
 
-	//Mario test
 	game.load.tilemap('map', 'Assets/Tilesheets/map.json', null, Phaser.Tilemap.TILED_JSON);
     game.load.image('tiles', 'Assets/Images/Tilemap/town_indoor.png');
+	
 }
-
 //Initial function run after preload
 function create() {
 
