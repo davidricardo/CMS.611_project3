@@ -35,7 +35,6 @@ var HUD;
 //Timer variables
 var timer = 10;
 
-
 //Mario test
 var map;
 var layer;
@@ -65,30 +64,17 @@ function create() {
     initializeMap();
     initializesSprites();
     initializeControls();
-
-    // http://www.html5gamedevs.com/topic/6476-collision-with-gameaddgraphics-and-a-sprite/
-    // http://jsfiddle.net/lewster32/4yh8ee1f/
-    var diarybmd = game.add.bitmapData(32, 32);
-    diarybmd.ctx.rect(0, 0, 32, 32);
-    diarybmd.ctx.fillStyle = "black";
-    diarybmd.ctx.fill();
-
-    diary = game.add.sprite(game.world.centerX+100, game.world.centerY, diarybmd);
-    game.physics.arcade.enable(diary);
-    diary.anchor.set(0.5);
-    diary.body.immovable = true;
-    diary.body.collideWorldBounds = true;
+    initializeEvidence();
 
     var style = {
-        font: "32px Arial",
-        fill: "#ff0044",
-//        wordWrap: true,
-//        wordWrapWidth: sprite.width,
+        font: "16px Arial",
+        fill: "#ffff00",
+        //wordWrap: true,
+        //wordWrapWidth: sprite.width,
         align: "center",
-        backgroundColor: "#ffff00"
     };
 
-    text = game.add.text(0, 0, "You found a diary", style);
+    text = game.add.text(0, 0, "Hold down the return key to make the object float.", style);
     text.anchor.set(0.5);
     text.visible = false;
 
@@ -97,7 +83,9 @@ function create() {
     HUD = game.add.text(
         10, // The x position
         5, // The y position
-        "Protagonist: ", // The text content
+        "Friend Belief Stat: " + currentFriendSprite.belief +
+        "\nDetective Belief Stat: " + detectiveSprite.belief +
+        "\nKiller Belief Stat: " + killerSprite.belief, // The text content
         {
             font: "14px Arial", // Style, font
             fill: "#FF0",             // Style, fill color
@@ -130,9 +118,15 @@ function initializesSprites(){
     //game.add.sprite(0,0,"Background");
 
     playerSprite = createSprite(playerSprite,SCREEN_WIDTH/2,SCREEN_HEIGHT/2,"Protagonist_Not_Ghost");
-    ghostOfYou = new NPC(ghostOfYou,SCREEN_WIDTH/3,SCREEN_HEIGHT/2,"Protagonist_Ghost",goGhost);
-    ghostOfYou.sprite.body.immovable = true;
 
+    //Create all NPCs
+    ghostOfYou = new NPC(ghostOfYou,SCREEN_WIDTH/3,SCREEN_HEIGHT/2,"Protagonist_Ghost",goGhost);
+    currentFriendSprite = new NPC(currentFriendSprite, 200, 300, "Current_Friend");
+    detectiveSprite = new NPC(detectiveSprite, 300, 300, "Detective");
+    killerSprite = new NPC(killerSprite, 400, 300, "Killer");
+
+    //Adjust properties of NPCs
+    ghostOfYou.sprite.body.immovable = true;
 }
 
 //Initializes controls
@@ -141,6 +135,22 @@ function initializeControls(){
     spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
     enterbar = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
     game.input.enabled = true;
+}
+
+//Initialize evidence
+function initializeEvidence(){
+    // http://www.html5gamedevs.com/topic/6476-collision-with-gameaddgraphics-and-a-sprite/
+    // http://jsfiddle.net/lewster32/4yh8ee1f/
+    var diarybmd = game.add.bitmapData(32, 32);
+    diarybmd.ctx.rect(0, 0, 32, 32);
+    diarybmd.ctx.fillStyle = "black";
+    diarybmd.ctx.fill();
+
+    diary = game.add.sprite(game.world.centerX+100, game.world.centerY, diarybmd);
+    game.physics.arcade.enable(diary);
+    diary.anchor.set(0.5);
+    diary.body.immovable = false;
+
 }
 
 /**
@@ -183,7 +193,10 @@ function update() {
 
     // Update the text of 'HUD'
     // Reference: https://gist.github.com/videlais/bb0d7e11dd7967b45ad1
-    HUD.text = Math.round(playerSprite.x);
+    HUD.text =
+        "Friend Belief Stat: " + currentFriendSprite.belief +
+        "\nDetective Belief Stat: " + detectiveSprite.belief +
+        "\nKiller Belief Stat: " + killerSprite.belief
 }
 
 //Updates collision
@@ -211,11 +224,17 @@ function cameraUpdate() {
 function controls() {
     movementControls();
 
-    enterbar.onDown.add(function () {
-        if(game.physics.arcade.overlap(diary, playerSprite)){
-            text.setText("You are now reading the diary!");
-        }
-    }, this);
+    //enterbar.onDown.add(function () {
+    //    if(game.physics.arcade.overlap(diary, playerSprite)){
+    //        text.setText("You are now reading the diary!");
+    //        diary.y = game.world.centerY + (8 * Math.cos(game.time.now/200));
+    //    }
+    //}, this);
+
+    if(enterbar.isDown && game.physics.arcade.overlap(diary, playerSprite)){
+        //Reference: https://developer.amazon.com/public/community/post/Tx1B570TUCFXJ66/Intro-To-Phaser-Part-2-Preloading-Sprites-Displaying-Text-and-Game-State
+        diary.y = game.world.centerY + (8 * Math.cos(game.time.now/200));
+    }
 
 }
 
@@ -276,6 +295,16 @@ function NPC(sprite,x_position,y_position,name,interactFunction) {
     this.interactUpdate = function(){
         if (playerSprite.body.touching && this.sprite.body.touching){
             this.interactFunction();
+
+            //Increase NPC's belief stat on contact but keep under 100
+            if(this.belief + 10 <= 100){
+                this.belief=this.belief+10;
+            }
+            else{
+                this.belief = 100;
+            }
         }
     };
+    //Return random number between 1 and 50
+    this.belief = Math.floor((Math.random() * 50) + 1);
 }
