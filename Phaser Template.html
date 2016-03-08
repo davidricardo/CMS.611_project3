@@ -6,14 +6,14 @@
     <style type="text/css">
         body {
             margin: 0;
-			background-color: black;
+            background-color: black;
         }
-		canvas {
-			display : block;
-			margin : auto;
-			position: relative;
-			transform: translateY(10%);
-		}
+        canvas {
+            display: block;
+            margin: auto;
+            position: relative;
+            transform: translateY(10%);
+        }
     </style>
 </head>
 <body>
@@ -51,28 +51,35 @@ const INPUT_DELAY = Phaser.Timer.SECOND*1/2;
 
 // Story variables
 var text;
+var HUD;
+
+//Timer variables
+var timer = 10;
+
 
 //Preloads graphics onto the game
 function preload() {
-	// name of the
-	var spriteGraphics = [
-		{name: "Protagonist_Not_Ghost", url: "Assets/Sprite Sheets/Protagonist.png"},
-		{name: "Protagonist_Ghost", url: "Assets/Sprite Sheets/ProtagonistGhost.png"},
-		{name: "Current_Friend", url: "Assets/Sprite Sheets/CurrentFriend.png"},
-		{name: "Detective", url: "Assets/Sprite Sheets/Detective.png"},
-		{name: "Killer", url: "Assets/Sprite Sheets/Killer.png"}
-	]
+    // name of the
+    var spriteGraphics = [
+        {name: "Protagonist_Not_Ghost", url: "Assets/Sprite Sheets/Protagonist.png"},
+        {name: "Protagonist_Ghost", url: "Assets/Sprite Sheets/ProtagonistGhost.png"},
+        {name: "Current_Friend", url: "Assets/Sprite Sheets/CurrentFriend.png"},
+        {name: "Detective", url: "Assets/Sprite Sheets/Detective.png"},
+        {name: "Killer", url: "Assets/Sprite Sheets/Killer.png"}
+    ]
 
-	for(var i=0; i<spriteGraphics.length; i++){
-		game.load.spritesheet(spriteGraphics[i].name,spriteGraphics[i].url,SPRITE_WIDTH,SPRITE_HEIGHT);
-	}
-	game.load.image("Background","Assets/Backgrounds/Sample.jpg");
+    for(var i=0; i<spriteGraphics.length; i++){
+        game.load.spritesheet(spriteGraphics[i].name,spriteGraphics[i].url,SPRITE_WIDTH,SPRITE_HEIGHT);
+    }
+    game.load.image("Background","Assets/Backgrounds/Sample.jpg");
 }
 
 //Initial function run after preload
 function create() {
-	initializesSprites();
-	initializeControls();
+
+    initializesSprites();
+    initializeControls();
+    
 
     // http://www.html5gamedevs.com/topic/6476-collision-with-gameaddgraphics-and-a-sprite/
     // http://jsfiddle.net/lewster32/4yh8ee1f/
@@ -100,54 +107,67 @@ function create() {
     text.anchor.set(0.5);
     text.visible = false;
 
+    // Create a GUI element that can be written to
+    // Reference: https://videlais.com/2015/09/04/phaserfriday-phaser-basics-making-a-platformer/
+    HUD = game.add.text(
+            10, // The x position
+            5, // The y position
+            "Protagonist: ", // The text content
+            {
+                font: "14px Arial", // Style, font
+                fill: "#FF0",             // Style, fill color
+            }
+    );
+
 }
 
 //Initializes all the characters
 function initializesSprites(){
-	game.add.sprite(0,0,"Background");
-	playerSprite = createSprite(playerSprite,SCREEN_WIDTH/2,SCREEN_HEIGHT/2,"Protagonist_Not_Ghost");
-	playerSprite.body.immovable = true;
-	ghostOfYou = createSprite(ghostOfYou,SCREEN_WIDTH/3,SCREEN_HEIGHT/2,"Protagonist_Ghost");
-	ghostOfYou.body.moves = false;
+    game.add.sprite(0,0,"Background");
+    playerSprite = createSprite(playerSprite,SCREEN_WIDTH/2,SCREEN_HEIGHT/2,"Protagonist_Not_Ghost");
+    playerSprite.body.immovable = true;
+    ghostOfYou = createSprite(ghostOfYou,SCREEN_WIDTH/3,SCREEN_HEIGHT/2,"Protagonist_Ghost");
+    ghostOfYou.body.moves = false;
 }
 
 //Initializes controls
 function initializeControls(){
-	cursors = game.input.keyboard.createCursorKeys();
-	spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-	enterbar = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
-	game.input.enabled = true;
+    cursors = game.input.keyboard.createCursorKeys();
+    spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+    enterbar = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
+    game.input.enabled = true;
 }
 
 /**
 Initializes a sprite
 @param: sprite
-		a var to store the sprite 
+        a var to store the sprite
 @param: x_position
-		an integer refering to starting x position
+        an integer refering to starting x position
 @param: y_position
-		an integer refering to starting y position
+        an integer refering to starting y position
 @param: name
-		a string refering to the sprite sheet in the format of
-		[downFrame1 downFrame2 downFrame3 downFrame4]
-		[leftFrame1 leftFrame2 leftFrame3 leftFrame4]
-		[rightFrame1 rightFrame2 rightFrame3 rightFrame4]
-		[upFrame1 upFrame2 upFrame3 upFrame4]
+        a string refering to the sprite sheet in the format of
+        [downFrame1 downFrame2 downFrame3 downFrame4]
+        [leftFrame1 leftFrame2 leftFrame3 leftFrame4]
+        [rightFrame1 rightFrame2 rightFrame3 rightFrame4]
+        [upFrame1 upFrame2 upFrame3 upFrame4]
 @return: the initialized sprite
 */
 function createSprite(sprite,x_position,y_position,name) {
-	//Initializes sprite and adds it to game
-	sprite = game.add.sprite(x_position,y_position,name,0);
+    //Initializes sprite and adds it to game
+    sprite = game.add.sprite(x_position,y_position,name,0);
 
-	//Enables physics
-	game.physics.enable(sprite);
-	sprite.body.collideWorldBounds = true;
+    //Enables physics
+    game.physics.enable(sprite);
+    //Make sure 'sprite' does not leave the world
+    sprite.body.collideWorldBounds = true;
 
-	sprite.animations.add("down",[0,1,2,3],FRAME_RATE,true);
-	sprite.animations.add("left",[4,5,6,7],FRAME_RATE,true);
-	sprite.animations.add("right",[8,9,10,11],FRAME_RATE,true);
-	sprite.animations.add("up",[12,13,14,15],FRAME_RATE,true);
-	return sprite;
+    sprite.animations.add("down",[0,1,2,3],FRAME_RATE,true);
+    sprite.animations.add("left",[4,5,6,7],FRAME_RATE,true);
+    sprite.animations.add("right",[8,9,10,11],FRAME_RATE,true);
+    sprite.animations.add("up",[12,13,14,15],FRAME_RATE,true);
+    return sprite;
 }
     
 //Update function
@@ -155,11 +175,15 @@ function update() {
     controls();
     collisionUpdate();
     cameraUpdate();
+
+    // Update the text of 'HUD'
+    // Reference: https://gist.github.com/videlais/bb0d7e11dd7967b45ad1
+    HUD.text = Math.round(playerSprite.x);
 }
 
 //Updates collision
 function collisionUpdate() {
-	game.physics.arcade.collide(ghostOfYou,playerSprite,goGhost);
+    game.physics.arcade.collide(ghostOfYou,playerSprite,goGhost);
     if(game.physics.arcade.overlap(diary, playerSprite)){
         text.x = game.world.centerX;
         text.y = 50;
@@ -177,7 +201,7 @@ function cameraUpdate() {
 
 //Manages controls for the game
 function controls() {
-	movementControls();
+    movementControls();
     enterbar.onDown.add(function () {
         if(game.physics.arcade.overlap(diary, playerSprite)){
             text.setText("You are now reading the diary!");
@@ -188,52 +212,53 @@ function controls() {
 
 //Test for spacebar events
 function goGhost(){
-	if (spacebar.isDown && enableButtonInput){
-		if (prologueEnded==false){
-			playerSprite.loadTexture("Protagonist_Ghost",FRAME_RATE,true);
-			prologueEnded = true;	
-		} else {
-			playerSprite.loadTexture("Protagonist_Not_Ghost",FRAME_RATE,true);
-			prologueEnded = false;
-		}
-		disableInput();
-	}
-	
+    if (spacebar.isDown && enableButtonInput){
+        if (prologueEnded==false){
+            playerSprite.loadTexture("Protagonist_Ghost",FRAME_RATE,true);
+            prologueEnded = true;
+        } else {
+            playerSprite.loadTexture("Protagonist_Not_Ghost",FRAME_RATE,true);
+            prologueEnded = false;
+        }
+        disableInput();
+    }
+
 }
 
 //Reenables button input
 function reenableInput(){
-	enableButtonInput = true;
+    enableButtonInput = true;
 }
 
 //Disables button input
 function disableInput(){
-	enableButtonInput=false;
-	game.time.events.add(INPUT_DELAY,reenableInput,this);
+    enableButtonInput=false;
+    game.time.events.add(INPUT_DELAY,reenableInput,this);
 }
 
 //Manages movement controls
 function movementControls(){
-	//Resets movement
-	playerSprite.body.velocity.x = 0;
-	playerSprite.body.velocity.y = 0;
+    //Resets movement
+    playerSprite.body.velocity.x = 0;
+    playerSprite.body.velocity.y = 0;
 
-	if (cursors.right.isDown) {
-		playerSprite.body.velocity.x = MOVEMENT_SPEED;
-		playerSprite.animations.play("right");
-	} else if (cursors.up.isDown) {
-		playerSprite.body.velocity.y = -MOVEMENT_SPEED;
-		playerSprite.animations.play("up");
-	} else if (cursors.down.isDown) {
-		playerSprite.body.velocity.y = MOVEMENT_SPEED;
-		playerSprite.animations.play("down");
-	} else if (cursors.left.isDown) {
-		playerSprite.body.velocity.x = -MOVEMENT_SPEED;
-		playerSprite.animations.play("left");
-	} else {
-		playerSprite.animations.stop(null,true);
-	}
+    if (cursors.right.isDown) {
+        playerSprite.body.velocity.x = MOVEMENT_SPEED;
+        playerSprite.animations.play("right");
+    } else if (cursors.up.isDown) {
+        playerSprite.body.velocity.y = -MOVEMENT_SPEED;
+        playerSprite.animations.play("up");
+    } else if (cursors.down.isDown) {
+        playerSprite.body.velocity.y = MOVEMENT_SPEED;
+        playerSprite.animations.play("down");
+    } else if (cursors.left.isDown) {
+        playerSprite.body.velocity.x = -MOVEMENT_SPEED;
+        playerSprite.animations.play("left");
+    } else {
+        playerSprite.animations.stop(null,true);
+    }
 }
+
 </script>
 
 </body>
