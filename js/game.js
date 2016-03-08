@@ -1,28 +1,6 @@
-<!doctype html> 
-<html lang="en"> 
-<head> 
-    <meta charset="UTF-8" />
-    <title>Project 3</title>
-    <style type="text/css">
-        body {
-            margin: 0;
-            background-color: black;
-        }
-        canvas {
-            display: block;
-            margin: auto;
-            position: relative;
-            transform: translateY(10%);
-        }
-    </style>
-</head>
-<body>
-<script type="text/javascript" src="js/phaser.min.js"></script>
-<script type="text/javascript">
-
 //Game screen dimension variables
-const SCREEN_WIDTH = 800;
-const SCREEN_HEIGHT = 600
+const SCREEN_WIDTH = 25*32;
+const SCREEN_HEIGHT = 20*32;
 
 var game = new Phaser.Game(SCREEN_WIDTH, SCREEN_HEIGHT, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 
@@ -36,6 +14,7 @@ const FRAME_RATE = 5;
 var prologueEnded = false;
 //Sprite variables
 var playerSprite;
+
 var ghostOfYou;
 var currentFriendSprite;
 var killerSprite;
@@ -57,29 +36,35 @@ var HUD;
 var timer = 10;
 
 
+//Mario test
+var map;
+var layer;
+
 //Preloads graphics onto the game
 function preload() {
-    // name of the
+
     var spriteGraphics = [
-        {name: "Protagonist_Not_Ghost", url: "Assets/Sprite Sheets/Protagonist.png"},
-        {name: "Protagonist_Ghost", url: "Assets/Sprite Sheets/ProtagonistGhost.png"},
-        {name: "Current_Friend", url: "Assets/Sprite Sheets/CurrentFriend.png"},
-        {name: "Detective", url: "Assets/Sprite Sheets/Detective.png"},
-        {name: "Killer", url: "Assets/Sprite Sheets/Killer.png"}
+        {name: "Protagonist_Not_Ghost", url: "Assets/Images/Sprite Sheets/Protagonist.png"},
+        {name: "Protagonist_Ghost", url: "Assets/Images/Sprite Sheets/ProtagonistGhost.png"},
+        {name: "Current_Friend", url: "Assets/Images/Sprite Sheets/CurrentFriend.png"},
+        {name: "Detective", url: "Assets/Images/Sprite Sheets/Detective.png"},
+        {name: "Killer", url: "Assets/Images/Sprite Sheets/Killer.png"}
     ]
 
     for(var i=0; i<spriteGraphics.length; i++){
         game.load.spritesheet(spriteGraphics[i].name,spriteGraphics[i].url,SPRITE_WIDTH,SPRITE_HEIGHT);
     }
-    game.load.image("Background","Assets/Backgrounds/Sample.jpg");
-}
 
+    game.load.tilemap('map', 'Assets/Tilesheets/map.json', null, Phaser.Tilemap.TILED_JSON);
+    game.load.image('tiles', 'Assets/Images/Tilemap/town_indoor.png');
+
+}
 //Initial function run after preload
 function create() {
 
+    initializeMap();
     initializesSprites();
     initializeControls();
-    
 
     // http://www.html5gamedevs.com/topic/6476-collision-with-gameaddgraphics-and-a-sprite/
     // http://jsfiddle.net/lewster32/4yh8ee1f/
@@ -110,24 +95,44 @@ function create() {
     // Create a GUI element that can be written to
     // Reference: https://videlais.com/2015/09/04/phaserfriday-phaser-basics-making-a-platformer/
     HUD = game.add.text(
-            10, // The x position
-            5, // The y position
-            "Protagonist: ", // The text content
-            {
-                font: "14px Arial", // Style, font
-                fill: "#FF0",             // Style, fill color
-            }
+        10, // The x position
+        5, // The y position
+        "Protagonist: ", // The text content
+        {
+            font: "14px Arial", // Style, font
+            fill: "#FF0",             // Style, fill color
+        }
     );
 
 }
 
+
+//Initializes map
+function initializeMap(){
+    map = game.add.tilemap('map');
+
+    map.addTilesetImage('Test Map', 'tiles');
+
+    layer = map.createLayer('Dorm Layer 1');
+
+    layer.resizeWorld();
+
+    layer.wrap = true;
+
+    map.setCollision(9);
+    map.setCollisionBetween(17,23);
+    //map.setCollisionBetween(25,31);
+}
+
 //Initializes all the characters
 function initializesSprites(){
-    game.add.sprite(0,0,"Background");
+
+    //game.add.sprite(0,0,"Background");
+
     playerSprite = createSprite(playerSprite,SCREEN_WIDTH/2,SCREEN_HEIGHT/2,"Protagonist_Not_Ghost");
-    playerSprite.body.immovable = true;
-    ghostOfYou = createSprite(ghostOfYou,SCREEN_WIDTH/3,SCREEN_HEIGHT/2,"Protagonist_Ghost");
-    ghostOfYou.body.moves = false;
+    ghostOfYou = new NPC(ghostOfYou,SCREEN_WIDTH/3,SCREEN_HEIGHT/2,"Protagonist_Ghost",goGhost);
+    ghostOfYou.sprite.body.immovable = true;
+
 }
 
 //Initializes controls
@@ -139,29 +144,29 @@ function initializeControls(){
 }
 
 /**
-Initializes a sprite
-@param: sprite
-        a var to store the sprite
-@param: x_position
-        an integer refering to starting x position
-@param: y_position
-        an integer refering to starting y position
-@param: name
-        a string refering to the sprite sheet in the format of
-        [downFrame1 downFrame2 downFrame3 downFrame4]
-        [leftFrame1 leftFrame2 leftFrame3 leftFrame4]
-        [rightFrame1 rightFrame2 rightFrame3 rightFrame4]
-        [upFrame1 upFrame2 upFrame3 upFrame4]
-@return: the initialized sprite
-*/
+ Initializes a sprite
+ @param: sprite
+ a var to store the sprite
+ @param: x_position
+ an integer refering to starting x position
+ @param: y_position
+ an integer refering to starting y position
+ @param: name
+ a string refering to the sprite sheet in the format of
+ [downFrame1 downFrame2 downFrame3 downFrame4]
+ [leftFrame1 leftFrame2 leftFrame3 leftFrame4]
+ [rightFrame1 rightFrame2 rightFrame3 rightFrame4]
+ [upFrame1 upFrame2 upFrame3 upFrame4]
+ @return: the initialized sprite
+ */
 function createSprite(sprite,x_position,y_position,name) {
     //Initializes sprite and adds it to game
     sprite = game.add.sprite(x_position,y_position,name,0);
 
     //Enables physics
     game.physics.enable(sprite);
-    //Make sure 'sprite' does not leave the world
     sprite.body.collideWorldBounds = true;
+    sprite.body.setSize(SPRITE_WIDTH*3/4,SPRITE_HEIGHT,SPRITE_WIDTH*1/8,0);
 
     sprite.animations.add("down",[0,1,2,3],FRAME_RATE,true);
     sprite.animations.add("left",[4,5,6,7],FRAME_RATE,true);
@@ -169,7 +174,7 @@ function createSprite(sprite,x_position,y_position,name) {
     sprite.animations.add("up",[12,13,14,15],FRAME_RATE,true);
     return sprite;
 }
-    
+
 //Update function
 function update() {
     controls();
@@ -183,7 +188,10 @@ function update() {
 
 //Updates collision
 function collisionUpdate() {
-    game.physics.arcade.collide(ghostOfYou,playerSprite,goGhost);
+    game.physics.arcade.collide(ghostOfYou.sprite,playerSprite);
+    ghostOfYou.interactUpdate();
+    game.physics.arcade.collide(playerSprite,layer);
+
     if(game.physics.arcade.overlap(diary, playerSprite)){
         text.x = game.world.centerX;
         text.y = 50;
@@ -195,18 +203,20 @@ function collisionUpdate() {
 }
 
 //Updates the camera position
-function cameraUpdate() {  
+function cameraUpdate() {
 
 }
 
 //Manages controls for the game
 function controls() {
     movementControls();
+
     enterbar.onDown.add(function () {
         if(game.physics.arcade.overlap(diary, playerSprite)){
             text.setText("You are now reading the diary!");
         }
     }, this);
+
 }
 
 
@@ -242,7 +252,7 @@ function movementControls(){
     playerSprite.body.velocity.x = 0;
     playerSprite.body.velocity.y = 0;
 
-    if (cursors.right.isDown) {
+    if (cursors.right.isDown && enableButtonInput) {
         playerSprite.body.velocity.x = MOVEMENT_SPEED;
         playerSprite.animations.play("right");
     } else if (cursors.up.isDown) {
@@ -259,7 +269,13 @@ function movementControls(){
     }
 }
 
-</script>
-
-</body>
-</html>
+//NPC Class
+function NPC(sprite,x_position,y_position,name,interactFunction) {
+    this.sprite = createSprite(sprite,x_position,y_position,name);
+    this.interactFunction = interactFunction;
+    this.interactUpdate = function(){
+        if (playerSprite.body.touching && this.sprite.body.touching){
+            this.interactFunction();
+        }
+    };
+}
