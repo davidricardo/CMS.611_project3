@@ -29,9 +29,12 @@ var game = new Phaser.Game(SCREEN_WIDTH, SCREEN_HEIGHT, Phaser.AUTO, '', { prelo
 //Dimensions for spritesheet's individual sprite
 const SPRITE_WIDTH = 128/4;
 const SPRITE_HEIGHT = 192/4;
+const TILE_DIMENSIONS =32;
 //Movement speed and frame rate
 const MOVEMENT_SPEED = 100;
 const FRAME_RATE = 5;
+//Variable controlling AI movement path
+const UPDATE_MOVEMENT_TIME = Phaser.Timer.SECOND*2;
 //Event variables
 var prologueEnded = false;
 //Sprite variables
@@ -184,13 +187,14 @@ function update() {
     controls();
     collisionUpdate();
     cameraUpdate();
+    npcUpdate();
 }
 
 //Updates collision
 function collisionUpdate() {
 	game.physics.arcade.collide(ghostOfYou.sprite,playerSprite);
-	ghostOfYou.interactUpdate();
 	game.physics.arcade.collide(playerSprite,layer);
+	game.physics.arcade.collide(ghostOfYou.sprite,layer);
 	/*
     if(game.physics.arcade.overlap(diary, playerSprite)){
         text.x = game.world.centerX;
@@ -200,6 +204,12 @@ function collisionUpdate() {
     else{
         text.visible = false;
     }*/
+}
+
+//Updates NPC Movement
+function npcUpdate(){
+	ghostOfYou.interactUpdate();
+	ghostOfYou.movementUpdate();
 }
 
 //Updates the camera position
@@ -272,12 +282,29 @@ function movementControls(){
 function NPC(sprite,x_position,y_position,name,interactFunction) {
 	this.sprite = createSprite(sprite,x_position,y_position,name);
 	this.interactFunction = interactFunction;
+	//0 = Down, 1 = Right, 2 = Up, 3 = Down
+	this.direction = 0;
+	this.x_grid = Math.floor(x_position/TILE_DIMENSIONS);
+	this.y_grid = Math.floor(y_position/TILE_DIMENSIONS);
 	this.interactUpdate = function(){
+		console.log("x: ",this.x_grid," ",Math.floor(playerSprite.body.x/TILE_DIMENSIONS));
 		if (playerSprite.body.touching && this.sprite.body.touching){
 			this.interactFunction();
 		}
 	};
+	this.movementUpdate = function(){
+		if (this.direction==0){
+			//this.sprite.body.velocity.y = MOVEMENT_SPEED/2;
+			this.sprite.animations.play("down");
+		}
+		this.x_grid = Math.floor(this.sprite.body.x/TILE_DIMENSIONS);
+		this.y_grid = Math.floor(this.sprite.body.y/TILE_DIMENSIONS);
+	}
+	this.replanMovement = function(){
+		game.time.events.add(UPDATE_MOVEMENT_TIME,this.replanMovement,this);
+	}
 }
+
 </script>
 
 </body>
