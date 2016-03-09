@@ -8,6 +8,9 @@ var game = new Phaser.Game(SCREEN_WIDTH, SCREEN_HEIGHT, Phaser.AUTO, '', { prelo
 const SPRITE_WIDTH = 128/4;
 const SPRITE_HEIGHT = 192/4;
 const TILE_DIMENSIONS =32;
+
+
+const OVERLAP_RADIUS = SPRITE_HEIGHT/32+0.1;
 //Movement speed and frame rate
 const MOVEMENT_SPEED = 100;
 const FRAME_RATE = 5;
@@ -16,11 +19,16 @@ var prologueEnded = false;
 //Sprite variables
 var player;
 
-var ghostOfYou;
+//List of NPCs
+var npcs;
+var npcGroup;
+
 var currentFriend;
 var killer;
 var detective;
-var diary;
+
+//Group of diary
+var interactables;
 
 //Control variables
 var cursors;
@@ -54,6 +62,7 @@ function preload() {
 
     game.load.tilemap('map', 'Assets/Tilesheets/map.json', null, Phaser.Tilemap.TILED_JSON);
     game.load.image('tiles', 'Assets/Images/Tilemap/town_indoor.png');
+    game.load.image("diary", "Assets/Images/Objects/Diary.png");
 
 }
 //Initial function run after preload
@@ -71,7 +80,7 @@ function create() {
         align: "center",
     };
 
-    text = game.add.text(0, 0, "Hold down the return key to make the object float.", style);
+    text = game.add.text(0, 0, "The spacebar is the action button. Interact with the world using it!", style);
     text.anchor.set(0.5);
     text.visible = false;
 
@@ -111,17 +120,32 @@ function initializeMap(){
 //Initializes all the characters
 function initializesSprites(){
 
-    //game.add.sprite(0,0,"Background");
+    //Creates group of interactable objects
+	interactables = game.add.group();
 
-    player = new Player(player,SCREEN_WIDTH/2,SCREEN_HEIGHT/2,"Protagonist_Not_Ghost");
+    player = new Player(player,SCREEN_WIDTH/2,SCREEN_HEIGHT/2,"Protagonist_Ghost");
 
     //Create all NPCs
-    ghostOfYou = new NPC(ghostOfYou,SCREEN_WIDTH/3,SCREEN_HEIGHT/2,"Protagonist_Ghost",goGhost);
-    currentFriend = new NPC(currentFriend, 200, 300, "Current_Friend");
-    detective = new NPC(detective, 300, 300, "Detective");
-    killer = new NPC(killer, 400, 200, "Killer");
-    //Adjust properties of NPCs
-    ghostOfYou.sprite.body.immovable = true;
+
+    npcs = new Array();
+    //ghostOfYou = new NPC(ghostOfYou,SCREEN_WIDTH/3,SCREEN_HEIGHT/2,"Protagonist_Ghost",goGhost);
+    currentFriend = new NPC(currentFriend, TILE_DIMENSIONS*(player.point.x+5), TILE_DIMENSIONS*(player.point.y+5), "Current_Friend");
+    detective = new NPC(detective, TILE_DIMENSIONS*(player.point.x+5),TILE_DIMENSIONS*(player.point.y-5), "Detective");
+    killer = new NPC(killer, TILE_DIMENSIONS*(player.point.x-5), TILE_DIMENSIONS*(player.point.y-5), "Killer");
+    npcs.push(currentFriend);
+    npcs.push(detective);
+    npcs.push(killer);
+
+    npcGroup = game.add.group();
+    npcGroup.add(currentFriend.sprite);
+    npcGroup.add(detective.sprite);
+    npcGroup.add(killer.sprite);
+    for (index = 0; index < npcGroup.children.length; index++){
+    	npcs[index].sprite.body.immovable = true;
+    	npcs[index].updateDirection();
+    }
+    
+    player.sprite.bringToTop();
 }
 
 //Initializes controls
@@ -134,17 +158,12 @@ function initializeControls(){
 
 //Initialize evidence
 function initializeEvidence(){
-    // http://www.html5gamedevs.com/topic/6476-collision-with-gameaddgraphics-and-a-sprite/
-    // http://jsfiddle.net/lewster32/4yh8ee1f/
-    var diarybmd = game.add.bitmapData(32, 32);
-    diarybmd.ctx.rect(0, 0, 32, 32);
-    diarybmd.ctx.fillStyle = "black";
-    diarybmd.ctx.fill();
-
-    diary = game.add.sprite(game.world.centerX+100, game.world.centerY, diarybmd);
-    game.physics.arcade.enable(diary);
-    diary.anchor.set(0.5);
-    diary.body.immovable = false;
+	for (var i = 0; i < 4; i++){
+		var diary = interactables.create(game.world.centerX/4+200*i, game.world.height/4 + game.world.height/2*Math.random(), "diary");
+    	game.physics.arcade.enable(diary);
+    	diary.anchor.set(0.5);
+    	diary.body.immovable = false;	
+	}
 
 }
 
@@ -152,24 +171,26 @@ function initializeEvidence(){
 function update() {
     controls();
     collisionUpdate();
-    cameraUpdate();
-
+    movementAnimationUpdate();
     // Update the text of 'HUD'
     // Reference: https://gist.github.com/videlais/bb0d7e11dd7967b45ad1
     HUD.text =
-        "Friend Belief Stat: " + Math.round(currentFriend.belief) +
-        "\nDetective Belief Stat: " + Math.round(detective.belief) +
-        "\nKiller Belief Stat: " + Math.round(killer.belief)
+        "Brown Hair Belief Stat: " + Math.round(currentFriend.belief) +
+        "\nBlack Hair Belief Stat: " + Math.round(detective.belief) +
+        "\nBlonde Hair Belief Stat: " + Math.round(killer.belief)
 }
 
 //Updates collision
 function collisionUpdate() {
-    game.physics.arcade.collide(ghostOfYou.sprite,player.sprite);
-    game.physics.arcade.collide(ghostOfYou.sprite,killer.sprite);
-    ghostOfYou.interactUpdate();
-    game.physics.arcade.collide(player.sprite,layer);
 
-    if(game.physics.arcade.overlap(diary, player.sprite)){
+    game.physics.arcade.collide(player.sprite,layer);
+    //game.physics.arcade.collide(npcGroup,player.sprite);
+    game.physics.arcade.collide(npcGroup,layer);
+    game.physics.arcade.collide(interactables,layer);    
+    game.physics.arcade.collide(npcGroup,npcGroup,stopNPC,null,this);
+    game.physics.arcade.collide(npcGroup,interactables,stopNPC,null,this);
+    
+    if(game.physics.arcade.overlap(interactables, player.sprite)){
         text.x = game.world.centerX;
         text.y = 50;
         text.visible = true;
@@ -179,15 +200,15 @@ function collisionUpdate() {
     }
 }
 
-//Updates the camera position
-function cameraUpdate() {
-
-}
 
 //Manages controls for the game
 function controls() {
     movementControls();
-
+    for (index = 0; index < npcs.length; index++){
+    	if (enableButtonInput && spacebar.isDown){
+			npcs[index].interactUpdate();    		
+    	}
+    }
     //enterbar.onDown.add(function () {
     //    if(game.physics.arcade.overlap(diary, player.sprite)){
     //        text.setText("You are now reading the diary!");
@@ -195,42 +216,34 @@ function controls() {
     //    }
     //}, this);
 
-    if(enterbar.isDown && game.physics.arcade.overlap(diary, player.sprite)){
+    game.physics.arcade.overlap(interactables, player.sprite,raiseObject,null,this);
+
+}
+
+//Raises passed object if conditions met
+function raiseObject(player,object){
+	if(spacebar.isDown){
         //Reference: https://developer.amazon.com/public/community/post/Tx1B570TUCFXJ66/Intro-To-Phaser-Part-2-Preloading-Sprites-Displaying-Text-and-Game-State
-        diary.y = game.world.centerY + (8 * Math.cos(game.time.now/200));
-        changeBeliefStat();
+        object.y = object.y + (8 * Math.cos(game.time.now/200));
+        changeBeliefStat(object);
     }
 }
 
 
-//Test for spacebar events
-function goGhost(){
-    if (spacebar.isDown && enableButtonInput){
-        if (prologueEnded==false){
-            player.sprite.loadTexture("Protagonist_Ghost",FRAME_RATE,true);
-            prologueEnded = true;
-        } else {
-            player.sprite.loadTexture("Protagonist_Not_Ghost",FRAME_RATE,true);
-            prologueEnded = false;
-        }
-        disableInput();
-    }
-
+function stopNPC(npc,obstacle){
+	obstacle.body.velocity.x = 0;
+	obstacle.body.velocity.y = 0;
+	var npcCollided = npcs[npcGroup.getIndex(npc)];
+	if (npcCollided.isMovable(obstacle)==false){
+		npcCollided.stop();
+	} 
 }
 
-function changeBeliefStat(){
+//Interaction function if
 
-    var spriteObjects = [currentFriend,detective,killer];
-    var rate = .1
-
-    for(var i=0; i<spriteObjects.length; i++){
-        //Increase NPC's belief stat on contact but keep under 100
-        if(spriteObjects[i].belief + rate <= 100){
-            spriteObjects[i].belief=spriteObjects[i].belief+rate;
-        }
-        else{
-            spriteObjects[i].belief = 100;
-        }
+function changeBeliefStat(object){
+    for(var i=0; i<npcs.length; i++){
+    	npcs[i].influenceCircle(object);
     }
 }
 
@@ -250,35 +263,115 @@ function movementControls(){
     //Resets movement
     player.sprite.body.velocity.x = 0;
     player.sprite.body.velocity.y = 0;
+	player.updateMovement();    
+}
 
-    if (cursors.right.isDown && enableButtonInput) {
-        player.sprite.body.velocity.x = MOVEMENT_SPEED;
-        player.sprite.animations.play("right");
-    } else if (cursors.up.isDown) {
-        player.sprite.body.velocity.y = -MOVEMENT_SPEED;
-        player.sprite.animations.play("up");
-    } else if (cursors.down.isDown) {
-        player.sprite.body.velocity.y = MOVEMENT_SPEED;
-        player.sprite.animations.play("down");
-    } else if (cursors.left.isDown) {
-        player.sprite.body.velocity.x = -MOVEMENT_SPEED;
-        player.sprite.animations.play("left");
-    } else {
-        player.sprite.animations.stop(null,true);
-    }
+//Manages movement animations for NPCS
+function movementAnimationUpdate(){
+	//killer.updateMovement();
+}
+
+//Checks to see if overlap exist between a reference point to another point
+function overlapExist(referencePoint,otherPoint){
+	distance = new Phaser.Line(referencePoint.x,referencePoint.y,otherPoint.x,otherPoint.y);
+	if (distance.length<OVERLAP_RADIUS){
+		return true;
+	} else {
+		return false;
+	}
+}
+
+//Checks to see if sphere of spooky influence exist between a reference point to another point
+function spookyOverlapExist(referencePoint,otherPoint){
+	distance = new Phaser.Line(referencePoint.x,referencePoint.y,otherPoint.x,otherPoint.y);
+	if (distance.length<5){
+		return true;
+	} else {
+		return false;
+	}
 }
 
 //NPC Class
 function NPC(sprite,x_position,y_position,name,interactFunction) {
     this.sprite = createSprite(this.sprite,x_position,y_position,name);
     this.interactFunction = interactFunction;
-    this.x_grid = Math.floor(x_position/TILE_DIMENSIONS);
-	this.y_grid = Math.floor(y_position/TILE_DIMENSIONS);
+    this.point = new Phaser.Point(this.sprite.body.center.x/TILE_DIMENSIONS,this.sprite.body.center.y/TILE_DIMENSIONS);
+    //1 = Down, 2 = Right, 3 = Up, 4 = Left, 0 = Not Moving
+    this.direction = 0;
     this.interactUpdate = function(){
-        if (player.sprite.body.touching && this.sprite.body.touching){
-            this.interactFunction();
+    	if (overlapExist(this.point,player.point)){
+        	if(this.belief + 0.1 <= 100){
+            	this.belief=this.belief+0.5;
+	        }
+	        else{
+	            this.belief = 100;
+	        }
+        	disableInput();
         }
     };
+    this.influenceCircle = function(sprite){
+    	thatPoint = new Phaser.Point(sprite.body.center.x/TILE_DIMENSIONS,sprite.body.center.y/TILE_DIMENSIONS);
+    	if (spookyOverlapExist(this.point,thatPoint)){
+    		if(this.belief + 0.1 <= 100){
+            	this.belief=this.belief+0.1;
+	        }
+	        else{
+	            this.belief = 100;
+	        }
+    	}
+    }
+    this.updateDirection = function(){
+    	this.direction = Math.floor(Math.random()*5);
+    	this.sprite.body.velocity.y = 0;
+    	this.sprite.body.velocity.x = 0;
+    	if (this.direction==1){
+        	this.sprite.body.velocity.y = MOVEMENT_SPEED/2;
+        	this.sprite.animations.play("down");
+    	} else if (this.direction==2){
+        	this.sprite.body.velocity.x = MOVEMENT_SPEED/2;
+        	this.sprite.animations.play("right");
+    	} else if (this.direction==3){
+        	this.sprite.body.velocity.y = -MOVEMENT_SPEED/2;
+        	this.sprite.animations.play("up");
+    	} else if (this.direction==4){
+        	this.sprite.body.velocity.x = -MOVEMENT_SPEED/2;
+        	this.sprite.animations.play("left");
+    	}
+    	game.time.events.add(Phaser.Timer.SECOND*2+Math.random()*Phaser.Timer.SECOND, this.updateDirection, this);
+    	this.updateMovement();
+    }
+    this.updateMovement = function(){
+    	if ((this.sprite.deltaX && this.sprite.deltaY) || this.direction==0){
+    		this.stop();
+    	}
+    	this.updatePoint();
+    }
+    this.updatePoint = function(){
+        this.point = new Phaser.Point(this.sprite.body.center.x/TILE_DIMENSIONS,this.sprite.body.center.y/TILE_DIMENSIONS);
+    }
+    this.stop = function(){
+    	this.sprite.animations.stop(null,true);
+    	this.sprite.body.velocity.y = 0;
+    	this.sprite.body.velocity.x = 0;
+    }
+    this.isMovable = function(sprite){
+    	var areaOfPlannedMovement = new Phaser.Rectangle(this.sprite.body.x,this.sprite.body.y,this.sprite.body.width,this.sprite.body.height);
+    	var areaOfObstacle = new Phaser.Rectangle(sprite.body.x,sprite.body.y,sprite.body.width,sprite.body.height);
+    	if (this.direction==1) {
+    		areaOfPlannedMovement.y += this.sprite.body.height;
+    	} else if (this.direction==2) {
+    		areaOfPlannedMovement.x += this.sprite.body.width;
+    	} else if (this.direction==3) {
+    		areaOfPlannedMovement.y -= this.sprite.body.height;
+    	} else if (this.direction==4) {
+    		areaOfPlannedMovement.x -= this.sprite.body.width;
+    	}
+    	if (Phaser.Rectangle.intersects(areaOfPlannedMovement,areaOfObstacle)){
+    		return false;
+    	} else {
+    		return true;
+    	}
+    }
     //Return random number between 1 and 50
     this.belief = Math.floor((Math.random() * 50) + 1);
 }
@@ -286,11 +379,28 @@ function NPC(sprite,x_position,y_position,name,interactFunction) {
 //Player Class
 function Player(sprite,x_position,y_position,name){
 	this.sprite = createSprite(this.sprite,x_position,y_position,name);
-	//0 = Down, 1 = Right, 2 = Up, 3 = Down
-	this.direction = 0;
-	this.x_grid = Math.floor(this.sprite.body.center.x/TILE_DIMENSIONS);
-	this.y_grid = Math.floor(this.sprite.body.center.y/TILE_DIMENSIONS);
-
+    this.point = new Phaser.Point(this.sprite.body.center.x/TILE_DIMENSIONS,this.sprite.body.center.y/TILE_DIMENSIONS);
+    this.updatePoint = function (){
+    	this.point = new Phaser.Point(this.sprite.body.center.x/TILE_DIMENSIONS,this.sprite.body.center.y/TILE_DIMENSIONS);
+    };
+    this.updateMovement = function(){
+    	if (cursors.right.isDown) {
+	        this.sprite.body.velocity.x = MOVEMENT_SPEED;
+	        this.sprite.animations.play("right");
+	    } else if (cursors.up.isDown) {
+	        this.sprite.body.velocity.y = -MOVEMENT_SPEED;
+	        this.sprite.animations.play("up");
+	    } else if (cursors.down.isDown) {
+	        this.sprite.body.velocity.y = MOVEMENT_SPEED;
+	        this.sprite.animations.play("down");
+	    } else if (cursors.left.isDown) {
+	        this.sprite.body.velocity.x = -MOVEMENT_SPEED;
+	        this.sprite.animations.play("left");
+	    } else {
+	        this.sprite.animations.stop(null,true);
+	    }
+	    this.updatePoint();
+    };
 }
 
 /**
