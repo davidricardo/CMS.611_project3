@@ -32,9 +32,6 @@ const INPUT_DELAY = Phaser.Timer.SECOND*1/2;
 var text;
 var HUD;
 
-//Timer variables
-var timer = 10;
-
 //Mario test
 var map;
 var layer;
@@ -194,9 +191,9 @@ function update() {
     // Update the text of 'HUD'
     // Reference: https://gist.github.com/videlais/bb0d7e11dd7967b45ad1
     HUD.text =
-        "Friend Belief Stat: " + currentFriendSprite.belief +
-        "\nDetective Belief Stat: " + detectiveSprite.belief +
-        "\nKiller Belief Stat: " + killerSprite.belief
+        "Friend Belief Stat: " + Math.round(currentFriendSprite.belief) +
+        "\nDetective Belief Stat: " + Math.round(detectiveSprite.belief) +
+        "\nKiller Belief Stat: " + Math.round(killerSprite.belief)
 }
 
 //Updates collision
@@ -234,6 +231,7 @@ function controls() {
     if(enterbar.isDown && game.physics.arcade.overlap(diary, playerSprite)){
         //Reference: https://developer.amazon.com/public/community/post/Tx1B570TUCFXJ66/Intro-To-Phaser-Part-2-Preloading-Sprites-Displaying-Text-and-Game-State
         diary.y = game.world.centerY + (8 * Math.cos(game.time.now/200));
+        changeBeliefStat();
     }
 
 }
@@ -252,6 +250,22 @@ function goGhost(){
         disableInput();
     }
 
+}
+
+function changeBeliefStat(){
+
+    var spriteObjects = [currentFriendSprite,detectiveSprite,killerSprite];
+    var rate = .1
+
+    for(var i=0; i<spriteObjects.length; i++){
+        //Increase NPC's belief stat on contact but keep under 100
+        if(spriteObjects[i].belief + rate <= 100){
+            spriteObjects[i].belief=spriteObjects[i].belief+rate;
+        }
+        else{
+            spriteObjects[i].belief = 100;
+        }
+    }
 }
 
 //Reenables button input
@@ -295,14 +309,6 @@ function NPC(sprite,x_position,y_position,name,interactFunction) {
     this.interactUpdate = function(){
         if (playerSprite.body.touching && this.sprite.body.touching){
             this.interactFunction();
-
-            //Increase NPC's belief stat on contact but keep under 100
-            if(this.belief + 10 <= 100){
-                this.belief=this.belief+10;
-            }
-            else{
-                this.belief = 100;
-            }
         }
     };
     //Return random number between 1 and 50
