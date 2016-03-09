@@ -122,8 +122,7 @@ function initializesSprites(){
     ghostOfYou = new NPC(ghostOfYou,SCREEN_WIDTH/3,SCREEN_HEIGHT/2,"Protagonist_Ghost",goGhost);
     currentFriend = new NPC(currentFriend, 200, 300, "Current_Friend");
     detective = new NPC(detective, 300, 300, "Detective");
-    killer = new NPC(killer, 400, 300, "Killer");
-
+    killer = new NPC(killer, 400, 200, "Killer");
     //Adjust properties of NPCs
     ghostOfYou.sprite.body.immovable = true;
 }
@@ -169,6 +168,7 @@ function update() {
 //Updates collision
 function collisionUpdate() {
     game.physics.arcade.collide(ghostOfYou.sprite,player.sprite);
+    game.physics.arcade.collide(ghostOfYou.sprite,killer.sprite);
     ghostOfYou.interactUpdate();
     game.physics.arcade.collide(player.sprite,layer);
 
@@ -202,7 +202,6 @@ function controls() {
         //Reference: https://developer.amazon.com/public/community/post/Tx1B570TUCFXJ66/Intro-To-Phaser-Part-2-Preloading-Sprites-Displaying-Text-and-Game-State
         diary.y = game.world.centerY + (8 * Math.cos(game.time.now/200));
     }
-
 }
 
 
@@ -283,8 +282,9 @@ function Player(sprite,x_position,y_position,name){
 	this.sprite = createSprite(this.sprite,x_position,y_position,name);
 	//0 = Down, 1 = Right, 2 = Up, 3 = Down
 	this.direction = 0;
-	this.x_grid = Math.floor(x_position/TILE_DIMENSIONS);
-	this.y_grid = Math.floor(y_position/TILE_DIMENSIONS);
+	this.x_grid = Math.floor(this.sprite.body.center.x/TILE_DIMENSIONS);
+	this.y_grid = Math.floor(this.sprite.body.center.y/TILE_DIMENSIONS);
+
 }
 
 /**
