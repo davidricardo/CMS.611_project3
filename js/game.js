@@ -80,7 +80,7 @@ function create() {
         align: "center",
     };
 
-    text = game.add.text(0, 0, "Hold down the return key to make the object float.", style);
+    text = game.add.text(0, 0, "Hold down the spacebar to make the object float.", style);
     text.anchor.set(0.5);
     text.visible = false;
 
@@ -144,7 +144,7 @@ function initializesSprites(){
     	npcs[index].updateDirection();
     }
     
-    player.bringToTop();
+    player.sprite.bringToTop();
 }
 
 //Initializes controls
@@ -157,10 +157,12 @@ function initializeControls(){
 
 //Initialize evidence
 function initializeEvidence(){
-    var diary = interactables.create(game.world.centerX+100, game.world.centerY, "diary");
-    game.physics.arcade.enable(diary);
-    diary.anchor.set(0.5);
-    diary.body.immovable = false;
+	for (var i = 0; i < 4; i++){
+		var diary = interactables.create(game.world.centerX/4+200*i, game.world.height/4 + game.world.height/2*Math.random(), "diary");
+    	game.physics.arcade.enable(diary);
+    	diary.anchor.set(0.5);
+    	diary.body.immovable = false;	
+	}
 
 }
 
@@ -172,9 +174,9 @@ function update() {
     // Update the text of 'HUD'
     // Reference: https://gist.github.com/videlais/bb0d7e11dd7967b45ad1
     HUD.text =
-        "Friend Belief Stat: " + Math.round(currentFriend.belief) +
-        "\nDetective Belief Stat: " + Math.round(detective.belief) +
-        "\nKiller Belief Stat: " + Math.round(killer.belief)
+        "Brown Hair Belief Stat: " + Math.round(currentFriend.belief) +
+        "\nBlack Hair Belief Stat: " + Math.round(detective.belief) +
+        "\nBlonde Hair Belief Stat: " + Math.round(killer.belief)
 }
 
 //Updates collision
@@ -183,6 +185,7 @@ function collisionUpdate() {
     game.physics.arcade.collide(player.sprite,layer);
     //game.physics.arcade.collide(npcGroup,player.sprite);
     game.physics.arcade.collide(npcGroup,layer);
+    game.physics.arcade.collide(interactables,layer);    
     game.physics.arcade.collide(npcGroup,npcGroup,stopNPC,null,this);
     game.physics.arcade.collide(npcGroup,interactables,stopNPC,null,this);
     
@@ -220,18 +223,19 @@ function controls() {
 function raiseObject(player,object){
 	if(spacebar.isDown){
         //Reference: https://developer.amazon.com/public/community/post/Tx1B570TUCFXJ66/Intro-To-Phaser-Part-2-Preloading-Sprites-Displaying-Text-and-Game-State
-        object.y = game.world.centerY + (8 * Math.cos(game.time.now/200));
+        object.y = object.y + (8 * Math.cos(game.time.now/200));
         changeBeliefStat(object);
     }
 }
 
 
-function stopNPC(obstacle,npc){
-	npcCollided = npcs[npcGroup.getIndex(npc)];
-	if (!npcCollided.isMovable(player)){
+function stopNPC(npc,obstacle){
+	obstacle.body.velocity.x = 0;
+	obstacle.body.velocity.y = 0;
+	var npcCollided = npcs[npcGroup.getIndex(npc)];
+	if (npcCollided.isMovable(obstacle)==false){
 		npcCollided.stop();
 	} 
-	console.log(npcCollided.sprite.body.velocity);
 }
 
 //Interaction function if
@@ -295,7 +299,12 @@ function NPC(sprite,x_position,y_position,name,interactFunction) {
     this.direction = 0;
     this.interactUpdate = function(){
     	if (overlapExist(this.point,player.point)){
-        	console.log(this.sprite.key+" "+this.point + ", Player" + player.point);
+        	if(this.belief + 0.1 <= 100){
+            	this.belief=this.belief+0.5;
+	        }
+	        else{
+	            this.belief = 100;
+	        }
         	disableInput();
         }
     };
@@ -327,7 +336,7 @@ function NPC(sprite,x_position,y_position,name,interactFunction) {
         	this.sprite.body.velocity.x = -MOVEMENT_SPEED/2;
         	this.sprite.animations.play("left");
     	}
-    	game.time.events.add(Phaser.Timer.SECOND*2, this.updateDirection, this);
+    	game.time.events.add(Phaser.Timer.SECOND*2+Math.random()*Phaser.Timer.SECOND, this.updateDirection, this);
     	this.updateMovement();
     }
     this.updateMovement = function(){
