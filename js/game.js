@@ -7,18 +7,19 @@ var game = new Phaser.Game(SCREEN_WIDTH, SCREEN_HEIGHT, Phaser.AUTO, '', { prelo
 //Dimensions for spritesheet's individual sprite
 const SPRITE_WIDTH = 128/4;
 const SPRITE_HEIGHT = 192/4;
+const TILE_DIMENSIONS =32;
 //Movement speed and frame rate
 const MOVEMENT_SPEED = 100;
 const FRAME_RATE = 5;
 //Event variables
 var prologueEnded = false;
 //Sprite variables
-var playerSprite;
+var player;
 
 var ghostOfYou;
-var currentFriendSprite;
-var killerSprite;
-var detectiveSprite;
+var currentFriend;
+var killer;
+var detective;
 var diary;
 
 //Control variables
@@ -62,7 +63,6 @@ function create() {
     initializesSprites();
     initializeControls();
     initializeEvidence();
-
     var style = {
         font: "16px Arial",
         fill: "#ffff00",
@@ -80,15 +80,14 @@ function create() {
     HUD = game.add.text(
         10, // The x position
         5, // The y position
-        "Friend Belief Stat: " + currentFriendSprite.belief +
-        "\nDetective Belief Stat: " + detectiveSprite.belief +
-        "\nKiller Belief Stat: " + killerSprite.belief, // The text content
+        "Friend Belief Stat: " + currentFriend.belief +
+        "\nDetective Belief Stat: " + detective.belief +
+        "\nKiller Belief Stat: " + killer.belief, // The text content
         {
             font: "14px Arial", // Style, font
             fill: "#FF0",             // Style, fill color
         }
     );
-
 }
 
 
@@ -114,13 +113,13 @@ function initializesSprites(){
 
     //game.add.sprite(0,0,"Background");
 
-    playerSprite = createSprite(playerSprite,SCREEN_WIDTH/2,SCREEN_HEIGHT/2,"Protagonist_Not_Ghost");
+    player = new Player(player,SCREEN_WIDTH/2,SCREEN_HEIGHT/2,"Protagonist_Not_Ghost");
 
     //Create all NPCs
     ghostOfYou = new NPC(ghostOfYou,SCREEN_WIDTH/3,SCREEN_HEIGHT/2,"Protagonist_Ghost",goGhost);
-    currentFriendSprite = new NPC(currentFriendSprite, 200, 300, "Current_Friend");
-    detectiveSprite = new NPC(detectiveSprite, 300, 300, "Detective");
-    killerSprite = new NPC(killerSprite, 400, 300, "Killer");
+    currentFriend = new NPC(currentFriend, 200, 300, "Current_Friend");
+    detective = new NPC(detective, 300, 300, "Detective");
+    killer = new NPC(killer, 400, 300, "Killer");
 
     //Adjust properties of NPCs
     ghostOfYou.sprite.body.immovable = true;
@@ -148,6 +147,150 @@ function initializeEvidence(){
     diary.anchor.set(0.5);
     diary.body.immovable = false;
 
+}
+
+//Update function
+function update() {
+    controls();
+    collisionUpdate();
+    cameraUpdate();
+
+    // Update the text of 'HUD'
+    // Reference: https://gist.github.com/videlais/bb0d7e11dd7967b45ad1
+    HUD.text =
+        "Friend Belief Stat: " + Math.round(currentFriend.belief) +
+        "\nDetective Belief Stat: " + Math.round(detective.belief) +
+        "\nKiller Belief Stat: " + Math.round(killer.belief)
+}
+
+//Updates collision
+function collisionUpdate() {
+    game.physics.arcade.collide(ghostOfYou.sprite,player.sprite);
+    ghostOfYou.interactUpdate();
+    game.physics.arcade.collide(player.sprite,layer);
+
+    if(game.physics.arcade.overlap(diary, player.sprite)){
+        text.x = game.world.centerX;
+        text.y = 50;
+        text.visible = true;
+    }
+    else{
+        text.visible = false;
+    }
+}
+
+//Updates the camera position
+function cameraUpdate() {
+
+}
+
+//Manages controls for the game
+function controls() {
+    movementControls();
+
+    //enterbar.onDown.add(function () {
+    //    if(game.physics.arcade.overlap(diary, player.sprite)){
+    //        text.setText("You are now reading the diary!");
+    //        diary.y = game.world.centerY + (8 * Math.cos(game.time.now/200));
+    //    }
+    //}, this);
+
+    if(enterbar.isDown && game.physics.arcade.overlap(diary, player.sprite)){
+        //Reference: https://developer.amazon.com/public/community/post/Tx1B570TUCFXJ66/Intro-To-Phaser-Part-2-Preloading-Sprites-Displaying-Text-and-Game-State
+        diary.y = game.world.centerY + (8 * Math.cos(game.time.now/200));
+        changeBeliefStat();
+    }
+
+}
+
+
+//Test for spacebar events
+function goGhost(){
+    if (spacebar.isDown && enableButtonInput){
+        if (prologueEnded==false){
+            player.sprite.loadTexture("Protagonist_Ghost",FRAME_RATE,true);
+            prologueEnded = true;
+        } else {
+            player.sprite.loadTexture("Protagonist_Not_Ghost",FRAME_RATE,true);
+            prologueEnded = false;
+        }
+        disableInput();
+    }
+
+}
+
+function changeBeliefStat(){
+
+    var spriteObjects = [currentFriend,detective,killer];
+    var rate = .1
+
+    for(var i=0; i<spriteObjects.length; i++){
+        //Increase NPC's belief stat on contact but keep under 100
+        if(spriteObjects[i].belief + rate <= 100){
+            spriteObjects[i].belief=spriteObjects[i].belief+rate;
+        }
+        else{
+            spriteObjects[i].belief = 100;
+        }
+    }
+}
+
+//Reenables button input
+function reenableInput(){
+    enableButtonInput = true;
+}
+
+//Disables button input
+function disableInput(){
+    enableButtonInput=false;
+    game.time.events.add(INPUT_DELAY,reenableInput,this);
+}
+
+//Manages movement controls
+function movementControls(){
+    //Resets movement
+    player.sprite.body.velocity.x = 0;
+    player.sprite.body.velocity.y = 0;
+
+    if (cursors.right.isDown && enableButtonInput) {
+        player.sprite.body.velocity.x = MOVEMENT_SPEED;
+        player.sprite.animations.play("right");
+    } else if (cursors.up.isDown) {
+        player.sprite.body.velocity.y = -MOVEMENT_SPEED;
+        player.sprite.animations.play("up");
+    } else if (cursors.down.isDown) {
+        player.sprite.body.velocity.y = MOVEMENT_SPEED;
+        player.sprite.animations.play("down");
+    } else if (cursors.left.isDown) {
+        player.sprite.body.velocity.x = -MOVEMENT_SPEED;
+        player.sprite.animations.play("left");
+    } else {
+        player.sprite.animations.stop(null,true);
+    }
+}
+
+//NPC Class
+function NPC(sprite,x_position,y_position,name,interactFunction) {
+    this.sprite = createSprite(this.sprite,x_position,y_position,name);
+    this.interactFunction = interactFunction;
+    this.x_grid = Math.floor(x_position/TILE_DIMENSIONS);
+	this.y_grid = Math.floor(y_position/TILE_DIMENSIONS);
+    this.interactUpdate = function(){
+        if (player.sprite.body.touching && this.sprite.body.touching){
+            this.interactFunction();
+        }
+    };
+    //Return random number between 1 and 50
+    this.belief = Math.floor((Math.random() * 50) + 1);
+}
+
+//Player Class
+function Player(sprite,x_position,y_position,name){
+	this.sprite = createSprite(this.sprite,x_position,y_position,name);
+	//0 = Down, 1 = Right, 2 = Up, 3 = Down
+	this.direction = 0;
+	this.x_grid = Math.floor(x_position/TILE_DIMENSIONS);
+	this.y_grid = Math.floor(y_position/TILE_DIMENSIONS);
 }
 
 /**
@@ -180,137 +323,4 @@ function createSprite(sprite,x_position,y_position,name) {
     sprite.animations.add("right",[8,9,10,11],FRAME_RATE,true);
     sprite.animations.add("up",[12,13,14,15],FRAME_RATE,true);
     return sprite;
-}
-
-//Update function
-function update() {
-    controls();
-    collisionUpdate();
-    cameraUpdate();
-
-    // Update the text of 'HUD'
-    // Reference: https://gist.github.com/videlais/bb0d7e11dd7967b45ad1
-    HUD.text =
-        "Friend Belief Stat: " + Math.round(currentFriendSprite.belief) +
-        "\nDetective Belief Stat: " + Math.round(detectiveSprite.belief) +
-        "\nKiller Belief Stat: " + Math.round(killerSprite.belief)
-}
-
-//Updates collision
-function collisionUpdate() {
-    game.physics.arcade.collide(ghostOfYou.sprite,playerSprite);
-    ghostOfYou.interactUpdate();
-    game.physics.arcade.collide(playerSprite,layer);
-
-    if(game.physics.arcade.overlap(diary, playerSprite)){
-        text.x = game.world.centerX;
-        text.y = 50;
-        text.visible = true;
-    }
-    else{
-        text.visible = false;
-    }
-}
-
-//Updates the camera position
-function cameraUpdate() {
-
-}
-
-//Manages controls for the game
-function controls() {
-    movementControls();
-
-    //enterbar.onDown.add(function () {
-    //    if(game.physics.arcade.overlap(diary, playerSprite)){
-    //        text.setText("You are now reading the diary!");
-    //        diary.y = game.world.centerY + (8 * Math.cos(game.time.now/200));
-    //    }
-    //}, this);
-
-    if(enterbar.isDown && game.physics.arcade.overlap(diary, playerSprite)){
-        //Reference: https://developer.amazon.com/public/community/post/Tx1B570TUCFXJ66/Intro-To-Phaser-Part-2-Preloading-Sprites-Displaying-Text-and-Game-State
-        diary.y = game.world.centerY + (8 * Math.cos(game.time.now/200));
-        changeBeliefStat();
-    }
-
-}
-
-
-//Test for spacebar events
-function goGhost(){
-    if (spacebar.isDown && enableButtonInput){
-        if (prologueEnded==false){
-            playerSprite.loadTexture("Protagonist_Ghost",FRAME_RATE,true);
-            prologueEnded = true;
-        } else {
-            playerSprite.loadTexture("Protagonist_Not_Ghost",FRAME_RATE,true);
-            prologueEnded = false;
-        }
-        disableInput();
-    }
-
-}
-
-function changeBeliefStat(){
-
-    var spriteObjects = [currentFriendSprite,detectiveSprite,killerSprite];
-    var rate = .1
-
-    for(var i=0; i<spriteObjects.length; i++){
-        //Increase NPC's belief stat on contact but keep under 100
-        if(spriteObjects[i].belief + rate <= 100){
-            spriteObjects[i].belief=spriteObjects[i].belief+rate;
-        }
-        else{
-            spriteObjects[i].belief = 100;
-        }
-    }
-}
-
-//Reenables button input
-function reenableInput(){
-    enableButtonInput = true;
-}
-
-//Disables button input
-function disableInput(){
-    enableButtonInput=false;
-    game.time.events.add(INPUT_DELAY,reenableInput,this);
-}
-
-//Manages movement controls
-function movementControls(){
-    //Resets movement
-    playerSprite.body.velocity.x = 0;
-    playerSprite.body.velocity.y = 0;
-
-    if (cursors.right.isDown && enableButtonInput) {
-        playerSprite.body.velocity.x = MOVEMENT_SPEED;
-        playerSprite.animations.play("right");
-    } else if (cursors.up.isDown) {
-        playerSprite.body.velocity.y = -MOVEMENT_SPEED;
-        playerSprite.animations.play("up");
-    } else if (cursors.down.isDown) {
-        playerSprite.body.velocity.y = MOVEMENT_SPEED;
-        playerSprite.animations.play("down");
-    } else if (cursors.left.isDown) {
-        playerSprite.body.velocity.x = -MOVEMENT_SPEED;
-        playerSprite.animations.play("left");
-    } else {
-        playerSprite.animations.stop(null,true);
-    }
-}
-
-//NPC Class
-function NPC(sprite,x_position,y_position,name,interactFunction) {
-    this.sprite = createSprite(sprite,x_position,y_position,name);
-    this.interactFunction = interactFunction;
-    this.interactUpdate = function(){
-        if (playerSprite.body.touching && this.sprite.body.touching){
-            this.interactFunction();
-        }
-    };
-    //Return random number between 1 and 50
-    this.belief = Math.floor((Math.random() * 50) + 1);
 }
