@@ -143,8 +143,8 @@ function initializesSprites(){
     	npcs[index].sprite.body.immovable = true;
     	npcs[index].updateDirection();
     }
-    //Adjust properties of NPCs
-    //ghostOfYou.sprite.body.immovable = true;
+    
+    player.bringToTop();
 }
 
 //Initializes controls
@@ -181,9 +181,10 @@ function update() {
 function collisionUpdate() {
 
     game.physics.arcade.collide(player.sprite,layer);
-    game.physics.arcade.collide(npcGroup,player.sprite);
+    //game.physics.arcade.collide(npcGroup,player.sprite);
     game.physics.arcade.collide(npcGroup,layer);
-    game.physics.arcade.collide(npcGroup,npcGroup);
+    game.physics.arcade.collide(npcGroup,npcGroup,stopNPC,null,this);
+    game.physics.arcade.collide(npcGroup,interactables,stopNPC,null,this);
     
     if(game.physics.arcade.overlap(interactables, player.sprite)){
         text.x = game.world.centerX;
@@ -225,21 +226,13 @@ function raiseObject(player,object){
 }
 
 
-/*Defunct
-//Test for spacebar events
-function goGhost(){
-    if (spacebar.isDown && enableButtonInput){
-        if (prologueEnded==false){
-            player.sprite.loadTexture("Protagonist_Ghost",FRAME_RATE,true);
-            prologueEnded = true;
-        } else {
-            player.sprite.loadTexture("Protagonist_Not_Ghost",FRAME_RATE,true);
-            prologueEnded = false;
-        }
-        disableInput();
-    }
+function stopNPC(obstacle,npc){
+	npcCollided = npcs[npcGroup.getIndex(npc)];
+	if (!npcCollided.isMovable(player)){
+		npcCollided.stop();
+	} 
+	console.log(npcCollided.sprite.body.velocity);
 }
-*/
 
 //Interaction function if
 
@@ -265,22 +258,7 @@ function movementControls(){
     //Resets movement
     player.sprite.body.velocity.x = 0;
     player.sprite.body.velocity.y = 0;
-    player.updatePoint();
-    if (cursors.right.isDown) {
-        player.sprite.body.velocity.x = MOVEMENT_SPEED;
-        player.sprite.animations.play("right");
-    } else if (cursors.up.isDown) {
-        player.sprite.body.velocity.y = -MOVEMENT_SPEED;
-        player.sprite.animations.play("up");
-    } else if (cursors.down.isDown) {
-        player.sprite.body.velocity.y = MOVEMENT_SPEED;
-        player.sprite.animations.play("down");
-    } else if (cursors.left.isDown) {
-        player.sprite.body.velocity.x = -MOVEMENT_SPEED;
-        player.sprite.animations.play("left");
-    } else {
-        player.sprite.animations.stop(null,true);
-    }
+	player.updateMovement();    
 }
 
 //Manages movement animations for NPCS
@@ -349,7 +327,7 @@ function NPC(sprite,x_position,y_position,name,interactFunction) {
         	this.sprite.body.velocity.x = -MOVEMENT_SPEED/2;
         	this.sprite.animations.play("left");
     	}
-    	game.time.events.add(Phaser.Timer.SECOND, this.updateDirection, this);
+    	game.time.events.add(Phaser.Timer.SECOND*2, this.updateDirection, this);
     	this.updateMovement();
     }
     this.updateMovement = function(){
@@ -363,6 +341,26 @@ function NPC(sprite,x_position,y_position,name,interactFunction) {
     }
     this.stop = function(){
     	this.sprite.animations.stop(null,true);
+    	this.sprite.body.velocity.y = 0;
+    	this.sprite.body.velocity.x = 0;
+    }
+    this.isMovable = function(sprite){
+    	var areaOfPlannedMovement = new Phaser.Rectangle(this.sprite.body.x,this.sprite.body.y,this.sprite.body.width,this.sprite.body.height);
+    	var areaOfObstacle = new Phaser.Rectangle(sprite.body.x,sprite.body.y,sprite.body.width,sprite.body.height);
+    	if (this.direction==1) {
+    		areaOfPlannedMovement.y += this.sprite.body.height;
+    	} else if (this.direction==2) {
+    		areaOfPlannedMovement.x += this.sprite.body.width;
+    	} else if (this.direction==3) {
+    		areaOfPlannedMovement.y -= this.sprite.body.height;
+    	} else if (this.direction==4) {
+    		areaOfPlannedMovement.x -= this.sprite.body.width;
+    	}
+    	if (Phaser.Rectangle.intersects(areaOfPlannedMovement,areaOfObstacle)){
+    		return false;
+    	} else {
+    		return true;
+    	}
     }
     //Return random number between 1 and 50
     this.belief = Math.floor((Math.random() * 50) + 1);
@@ -374,6 +372,24 @@ function Player(sprite,x_position,y_position,name){
     this.point = new Phaser.Point(this.sprite.body.center.x/TILE_DIMENSIONS,this.sprite.body.center.y/TILE_DIMENSIONS);
     this.updatePoint = function (){
     	this.point = new Phaser.Point(this.sprite.body.center.x/TILE_DIMENSIONS,this.sprite.body.center.y/TILE_DIMENSIONS);
+    };
+    this.updateMovement = function(){
+    	if (cursors.right.isDown) {
+	        this.sprite.body.velocity.x = MOVEMENT_SPEED;
+	        this.sprite.animations.play("right");
+	    } else if (cursors.up.isDown) {
+	        this.sprite.body.velocity.y = -MOVEMENT_SPEED;
+	        this.sprite.animations.play("up");
+	    } else if (cursors.down.isDown) {
+	        this.sprite.body.velocity.y = MOVEMENT_SPEED;
+	        this.sprite.animations.play("down");
+	    } else if (cursors.left.isDown) {
+	        this.sprite.body.velocity.x = -MOVEMENT_SPEED;
+	        this.sprite.animations.play("left");
+	    } else {
+	        this.sprite.animations.stop(null,true);
+	    }
+	    this.updatePoint();
     };
 }
 
