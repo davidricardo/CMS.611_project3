@@ -22,4 +22,10 @@ RULES WE SHOULD FOLLOW:
 3)If you change anything outside of the map ie add a variable/character/item/etc, PUSH! 
 	And make sure to message out asap to the group so we don't end up overlapping
 	on indices.
+====================================================================
+Things we should
+-Do not alter actors 1-9 unless you are in charge of them. They store the NPCs and are needed for the script.
+-Do not change the names variables 51-59. They store event ids of the events corresponding to the NPCs. 
+-Initialize them in every map
+-For events corresponding to NPCs, do not use self switch D except for when affected by player.
  
